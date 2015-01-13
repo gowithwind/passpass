@@ -3,9 +3,9 @@
 <title>Passpass</title>
 <style>
 body{
-	text-align: center;
+  text-align: center;
 }
-input[type="text"],input[type="password"] {
+input[type="text"],input[type="password"],select {
   width: 100%;
   padding: 10px;
   border: solid 1px #dcdcdc;
@@ -18,10 +18,13 @@ input[type="text"].focus {
 }
 </style>
 <h1>Passpass</h1>
-<input type="text" id="salt" value="jiangfrom2012@163.com"><br>
-<input type="password" id="phrase" value=""><br>
-<input type="text" id="target" value="baidu.com"><br>
+<input type="text" id="salt" placeholder="salt"><br>
+<input type="password" id="phrase" placeholder="phrase"><br>
+<input type="text" id="target" placeholder="target"><br>
+<select id="targets" onchange="select()"></select>
 <input type="text" id="result" placeholder="password" value="" onfocus="gen()"><br>
+<button onclick="cache()">cache salt and target</button>
+
 <script src="js/pbkdf2.js"></script>
 <script src="js/hmac-sha512.js"></script>
 <script src="js/enc-base64-min.js"></script>
@@ -31,31 +34,67 @@ input[type="text"].focus {
 <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/components/enc-base64-min.js"></script>
 -->
 <script>
+Storage.prototype.setObject = function(key, value) {
+    this.setItem(key, JSON.stringify(value));
+}
+
+Storage.prototype.getObject = function(key) {
+    var value = this.getItem(key);
+    return value && JSON.parse(value);
+}
+
+function init(){
+  var salt=localStorage.getItem("salt");
+  var target=localStorage.getItem("target");
+  document.getElementById('salt').value=salt;
+  document.getElementById('target').value=target;
+  console.log(localStorage.getObject("targets"));
+    var targets=localStorage.getObject("targets");
+  if(targets==null)targets=[];
+  for(var i in targets){
+    document.getElementById('targets').innerHTML+="<option>"+targets[i]+"</option>";
+  }
+}
+
+function cache(){
+  var salt=document.getElementById('salt').value;
+  var target=document.getElementById('target').value;
+  localStorage.setItem("salt",salt);
+  localStorage.setItem("target",target);
+  var targets=localStorage.getObject("targets");
+  if(targets==null)targets={};
+  targets[target]=target;
+  localStorage.setObject("targets",targets);
+}
+
+function select(){
+  document.getElementById('target').value=document.getElementById('targets').value;
+}
 var len=16;
+init();
+
 function is_good(pw){
-	var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
+  var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
     return re.test(pw);
 }
 
 function gen(){
-	var salt=document.getElementById('salt').value;
-	var phrase=document.getElementById('phrase').value;
-	var target=document.getElementById('target').value;
-	//var salt = CryptoJS.lib.WordArray.random(128/8);
-    console.log(salt);
-    var dk = CryptoJS.PBKDF2(phrase, salt, { keySize: 512/32, iterations: 3 });
-    console.log(dk);
-    var ret="";
-    for(var i=0;;i++){
-    	var str=""+salt+target+i;
-    	var hash = CryptoJS.HmacSHA512(str, dk);
-    	ret=hash.toString(CryptoJS.enc.Base64).slice(0,len);
-    	console.log(str,ret);
-    	if(is_good(ret))break;
-    }
-    document.getElementById('result').value=ret;
-    document.getElementById('result').setSelectionRange(0,len);
-    //prompt("Copy to clipboard: Ctrl+C, Enter", ret);
-    //return ret;
+  var salt=document.getElementById('salt').value;
+  var phrase=document.getElementById('phrase').value;
+  var target=document.getElementById('target').value;
+  if(phrase.length<6)return;
+  var dk = CryptoJS.PBKDF2(phrase, salt, { keySize: 512/32, iterations: 3 });
+  var ret="";
+  for(var i=0;;i++){
+    var str=""+salt+target+i;
+    var hash = CryptoJS.HmacSHA512(str, dk);
+    ret=hash.toString(CryptoJS.enc.Base64).slice(0,len);
+    if(is_good(ret))break;
+  }
+  console.log(salt,dk,str,ret);
+  document.getElementById('result').value=ret;
+  document.getElementById('result').setSelectionRange(0,len);
 }
+
+
 </script>
