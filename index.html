@@ -1,0 +1,61 @@
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1">
+<title>Passpass</title>
+<style>
+body{
+	text-align: center;
+}
+input[type="text"],input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+}
+input[type="text"]:focus,
+input[type="text"].focus {
+  border: solid 1px #707070;
+  box-shadow: 0 0 5px 1px #969696;
+}
+</style>
+<h1>Passpass</h1>
+<input type="text" id="salt" value="jiangfrom2012@163.com"><br>
+<input type="password" id="phrase" value=""><br>
+<input type="text" id="target" value="baidu.com"><br>
+<input type="text" id="result" placeholder="password" value="" onfocus="gen()"><br>
+<script src="js/pbkdf2.js"></script>
+<script src="js/hmac-sha512.js"></script>
+<script src="js/enc-base64-min.js"></script>
+<!--
+<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/pbkdf2.js"></script>
+<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/hmac-sha512.js"></script>
+<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/components/enc-base64-min.js"></script>
+-->
+<script>
+var len=16;
+function is_good(pw){
+	var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
+    return re.test(pw);
+}
+
+function gen(){
+	var salt=document.getElementById('salt').value;
+	var phrase=document.getElementById('phrase').value;
+	var target=document.getElementById('target').value;
+	//var salt = CryptoJS.lib.WordArray.random(128/8);
+    console.log(salt);
+    var dk = CryptoJS.PBKDF2(phrase, salt, { keySize: 512/32, iterations: 3 });
+    console.log(dk);
+    var ret="";
+    for(var i=0;;i++){
+    	var str=""+salt+target+i;
+    	var hash = CryptoJS.HmacSHA512(str, dk);
+    	ret=hash.toString(CryptoJS.enc.Base64).slice(0,len);
+    	console.log(str,ret);
+    	if(is_good(ret))break;
+    }
+    document.getElementById('result').value=ret;
+    document.getElementById('result').setSelectionRange(0,len);
+    //prompt("Copy to clipboard: Ctrl+C, Enter", ret);
+    //return ret;
+}
+</script>
